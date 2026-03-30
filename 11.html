@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>NSP — Сатана, я... | Аудиоплеер</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%);
+            font-family: system-ui, 'Segoe UI', 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .player-container {
+            max-width: 650px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Карточка плеера */
+        .player-card {
+            background: #ffffff;
+            border-radius: 2rem;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .player-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 25px 40px -14px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Верхняя секция с обложкой и заголовком */
+        .hero-section {
+            background: linear-gradient(120deg, #f1f5f9 0%, #e6edf4 100%);
+            padding: 2rem 2rem 1.5rem 2rem;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        /* Иконка/эмодзи как визуальный акцент */
+        .track-icon {
+            font-size: 4rem;
+            margin-bottom: 0.75rem;
+            display: inline-block;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.05));
+        }
+
+        .track-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.3px;
+            margin-bottom: 0.5rem;
+        }
+
+        .track-subtitle {
+            font-size: 0.9rem;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .file-badge {
+            background: #e2e8f0;
+            padding: 0.25rem 0.75rem;
+            border-radius: 40px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #1e293b;
+            font-weight: 500;
+        }
+
+        /* Основная секция с плеером */
+        .player-section {
+            padding: 2rem 2rem 2rem 2rem;
+            background: #ffffff;
+        }
+
+        /* Кастомный стиль для аудио */
+        audio {
+            width: 100%;
+            height: 54px;
+            border-radius: 60px;
+            outline: none;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Стилизация для WebKit (Chrome, Safari, Edge) */
+        audio::-webkit-media-controls-panel {
+            background-color: #f8fafc;
+            border-radius: 60px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        audio::-webkit-media-controls-play-button {
+            background-color: #e2e8f0;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        
+        audio::-webkit-media-controls-play-button:hover {
+            background-color: #cbd5e1;
+        }
+        
+        audio::-webkit-media-controls-current-time-display,
+        audio::-webkit-media-controls-time-remaining-display {
+            color: #1e293b;
+            font-weight: 500;
+        }
+        
+        audio::-webkit-media-controls-volume-slider {
+            background-color: #e2e8f0;
+            border-radius: 20px;
+        }
+
+        /* Дополнительная информация о треке */
+        .track-info {
+            background: #f8fafc;
+            border-radius: 1.25rem;
+            padding: 1rem 1.25rem;
+            margin-top: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.85rem;
+        }
+
+        .info-value {
+            color: #0f172a;
+            font-family: monospace;
+            font-size: 0.85rem;
+            background: #ffffff;
+            padding: 0.2rem 0.6rem;
+            border-radius: 30px;
+            word-break: break-all;
+            text-align: right;
+        }
+
+        /* Кнопки управления (дополнительные) */
+        .action-buttons {
+            display: flex;
+            gap: 0.8rem;
+            margin-top: 1.5rem;
+            justify-content: center;
+        }
+
+        .btn {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 0.6rem 1.2rem;
+            border-radius: 60px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1e293b;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: #e6edf4;
+            border-color: #cbd5e1;
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: #e2e8f0;
+            border-color: #cbd5e1;
+            color: #0f172a;
+        }
+
+        .btn-primary:hover {
+            background: #cbd5e6;
+        }
+
+        /* футер */
+        .footer-note {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #6c7a91;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1rem;
+        }
+
+        /* сообщение об ошибке */
+        .error-message {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 0.6rem 1rem;
+            border-radius: 60px;
+            font-size: 0.8rem;
+            text-align: center;
+            margin-top: 1rem;
+            border: 1px solid #fecaca;
+        }
+
+        /* адаптивность */
+        @media (max-width: 550px) {
+            body {
+                padding: 1rem;
+            }
+            .hero-section {
+                padding: 1.5rem 1rem;
+            }
+            .track-title {
+                font-size: 1.4rem;
+            }
+            .player-section {
+                padding: 1.5rem;
+            }
+            .info-row {
+                flex-direction: column;
+                gap: 0.3rem;
+            }
+            .info-value {
+                text-align: left;
+                word-break: break-word;
+            }
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="player-container">
+    <div class="player-card">
+        <!-- Верхняя часть с обложкой и названием -->
+        <div class="hero-section">
+            <div class="track-icon">🎧</div>
+            <h1 class="track-title">Сатана я...</h1>
+            <div class="track-subtitle">
+                <span>NSP Collection</span>
+                <span class="file-badge">NSP_11_satana_ya.mp3</span>
+            </div>
+        </div>
+
+        <!-- Секция плеера -->
+        <div class="player-section">
+            <audio id="audioPlayer" controls preload="metadata">
+                <source src="NSP_11_satana_ya.mp3" type="audio/mpeg">
+                Ваш браузер не поддерживает тег audio.
+            </audio>
+
+            <!-- Дополнительная информация о треке -->
+            <div class="track-info">
+                <div class="info-row">
+                    <span class="info-label">📀 Название файла</span>
+                    <span class="info-value">NSP_11_satana_ya.mp3</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">🎵 Формат</span>
+                    <span class="info-value">MP3, аудио</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">🏷️ Трек-номер</span>
+                    <span class="info-value">NSP 11</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">💿 Коллекция</span>
+                    <span class="info-value">NSP Серия</span>
+                </div>
+            </div>
+
+            <!-- Дополнительные кнопки управления -->
+            <div class="action-buttons">
+                <button class="btn" id="playBtn">▶ Воспроизвести</button>
+                <button class="btn" id="pauseBtn">⏸ Пауза</button>
+                <button class="btn" id="replayBtn">🔄 Заново</button>
+            </div>
+
+            <!-- Контейнер для сообщений об ошибках (динамически) -->
+            <div id="errorContainer"></div>
+        </div>
+    </div>
+    <div class="footer-note">
+        🎧 Встроенный аудиоплеер · Файл должен находиться в той же папке, что и страница
+    </div>
+</div>
+
+<script>
+    // Получаем элементы
+    const audio = document.getElementById('audioPlayer');
+    const playBtn = document.getElementById('playBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const replayBtn = document.getElementById('replayBtn');
+    const errorContainer = document.getElementById('errorContainer');
+
+    // Функция для отображения ошибок (если файл не найден)
+    function showError(message) {
+        // Очищаем предыдущие ошибки
+        if (errorContainer.innerHTML.trim() !== '') return;
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.innerHTML = `⚠️ ${message}<br><small>Убедитесь, что файл "NSP_11_satana_ya.mp3" находится в той же директории.</small>`;
+        errorContainer.appendChild(errorDiv);
+        
+        // Делаем карточку слегка красноватой (необязательно)
+        const playerCard = document.querySelector('.player-card');
+        if (playerCard) {
+            playerCard.style.border = '1px solid #fecaca';
+        }
+    }
+
+    // Обработчик ошибки загрузки аудио
+    audio.onerror = function(e) {
+        console.error('Ошибка загрузки аудиофайла');
+        showError('Не удалось загрузить файл "NSP_11_satana_ya.mp3".');
+    };
+
+    // Успешная загрузка — убираем сообщение об ошибке, если оно было
+    audio.oncanplaythrough = function() {
+        if (errorContainer.innerHTML) {
+            errorContainer.innerHTML = '';
+            const playerCard = document.querySelector('.player-card');
+            if (playerCard) playerCard.style.border = '';
+        }
+    };
+
+    // Также обработаем, если файл частично доступен
+    audio.onloadedmetadata = function() {
+        if (errorContainer.innerHTML && audio.error === null) {
+            errorContainer.innerHTML = '';
+            const playerCard = document.querySelector('.player-card');
+            if (playerCard) playerCard.style.border = '';
+        }
+    };
+
+    // Кнопка "Воспроизвести"
+    playBtn.addEventListener('click', () => {
+        audio.play().catch(err => {
+            // Если ошибка воспроизведения (например, из-за отсутствия файла)
+            if (err.name === 'NotSupportedError' || err.name === 'NotFoundError') {
+                showError('Файл не найден или формат не поддерживается.');
+            } else {
+                console.warn('Ошибка воспроизведения:', err);
+            }
+        });
+    });
+
+    // Кнопка "Пауза"
+    pauseBtn.addEventListener('click', () => {
+        audio.pause();
+    });
+
+    // Кнопка "Заново" (перемотка в начало)
+    replayBtn.addEventListener('click', () => {
+        audio.currentTime = 0;
+        // Если файл был на паузе, можно запустить заново (по желанию - только перемотка, но можно и запустить)
+        // по традиции кнопка "Заново" просто ставит на 0 секунду
+        // при желании можно дополнительно запустить:
+        // audio.play().catch(e => console.log(e));
+        // но чтобы не конфликтовать с кнопкой play, просто перематываем.
+        // Дополнительно визуально подсветим
+        replayBtn.style.transform = 'scale(0.96)';
+        setTimeout(() => { replayBtn.style.transform = ''; }, 150);
+    });
+
+    // Небольшой эффект для кнопок
+    const buttons = [playBtn, pauseBtn, replayBtn];
+    buttons.forEach(btn => {
+        btn.addEventListener('mousedown', () => {
+            btn.style.transform = 'scale(0.96)';
+        });
+        btn.addEventListener('mouseup', () => {
+            btn.style.transform = '';
+        });
+        btn.addEventListener('mouseleave', () => {
+            btn.style.transform = '';
+        });
+    });
+
+    // Если файл загрузился корректно, выведем в консоль подтверждение
+    audio.addEventListener('canplay', () => {
+        console.log('Аудиофайл NSP_11_satana_ya.mp3 готов к воспроизведению');
+    });
+
+    // Дополнительно: показываем информацию о длительности, если метаданные загружены
+    audio.addEventListener('loadedmetadata', () => {
+        if (audio.duration && isFinite(audio.duration)) {
+            const minutes = Math.floor(audio.duration / 60);
+            const seconds = Math.floor(audio.duration % 60);
+            const durationStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            // можно добавить длительность в info-row (но по желанию, необязательно)
+            const trackInfoDiv = document.querySelector('.track-info');
+            // проверяем, не добавлена ли уже строка длительности
+            if (!document.getElementById('durationRow')) {
+                const durationRow = document.createElement('div');
+                durationRow.className = 'info-row';
+                durationRow.id = 'durationRow';
+                durationRow.innerHTML = `
+                    <span class="info-label">⏱️ Длительность</span>
+                    <span class="info-value">${durationStr}</span>
+                `;
+                // вставляем перед последним элементом
+                const lastRow = trackInfoDiv.lastElementChild;
+                if (lastRow) {
+                    trackInfoDiv.insertBefore(durationRow, lastRow);
+                } else {
+                    trackInfoDiv.appendChild(durationRow);
+                }
+            } else {
+                const durationSpan = document.querySelector('#durationRow .info-value');
+                if (durationSpan) durationSpan.textContent = durationStr;
+            }
+        }
+    });
+</script>
+</body>
+</html>

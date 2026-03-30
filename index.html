@@ -1,1 +1,346 @@
-INDEX.HTML
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Аудиоплеер — NSP Коллекция (светлая тема)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            font-family: system-ui, 'Segoe UI', 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 2rem 1.5rem;
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            padding: 2rem 1.8rem;
+            box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #2d3e6e, #1f2a44);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.3rem;
+            display: inline-block;
+        }
+
+        .subhead {
+            color: #5a6c8a;
+            margin-bottom: 2rem;
+            border-left: 3px solid #7c8db0;
+            padding-left: 1rem;
+            font-size: 0.9rem;
+            font-weight: 450;
+        }
+
+        /* аудио список */
+        .audio-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* карточка трека */
+        .track-card {
+            background: #ffffff;
+            border-radius: 1.25rem;
+            transition: all 0.25s ease;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        }
+
+        .track-card:hover {
+            background: #fefefe;
+            border-color: #cbd5e1;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .track-info {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 1rem 1.2rem;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .track-number {
+            font-weight: 700;
+            font-size: 1rem;
+            background: #f1f5f9;
+            width: 2.6rem;
+            height: 2.6rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 60px;
+            color: #2c3e66;
+            box-shadow: inset 0 1px 1px rgba(0,0,0,0.02), 0 1px 0 rgba(255,255,255,0.8);
+            font-family: monospace;
+            border: 1px solid #e2e8f0;
+        }
+
+        .track-name {
+            font-weight: 600;
+            font-size: 1rem;
+            word-break: break-word;
+            flex: 2;
+            letter-spacing: -0.2px;
+            color: #1e2a3a;
+        }
+
+        .file-badge {
+            font-size: 0.7rem;
+            background: #f8fafc;
+            padding: 0.25rem 0.7rem;
+            border-radius: 30px;
+            color: #4a5b7a;
+            font-family: monospace;
+            letter-spacing: 0.2px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* плеер */
+        .audio-player {
+            padding: 0.9rem 1.2rem 1.1rem 1.2rem;
+        }
+
+        audio {
+            width: 100%;
+            height: 44px;
+            border-radius: 40px;
+            outline: none;
+        }
+
+        /* кастомизация для WebKit (светлая тема) */
+        audio::-webkit-media-controls-panel {
+            background-color: #f8fafc;
+            border-radius: 40px;
+        }
+        audio::-webkit-media-controls-current-time-display,
+        audio::-webkit-media-controls-time-remaining-display {
+            color: #1e293b;
+        }
+        audio::-webkit-media-controls-play-button {
+            background-color: #e2e8f0;
+            border-radius: 50%;
+        }
+
+        /* футер */
+        .footer-note {
+            margin-top: 2.5rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #6c7a91;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1.5rem;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+            .container {
+                padding: 1.2rem;
+            }
+            .track-info {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .track-number {
+                width: auto;
+                padding: 0.2rem 1rem;
+            }
+            .audio-player {
+                padding-top: 0.2rem;
+            }
+        }
+
+        /* стили для сообщений об ошибках */
+        .error-message {
+            font-size: 0.7rem;
+            color: #b91c1c;
+            margin-top: 0.3rem;
+            padding-left: 0.2rem;
+            background: #fee2e2;
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+        }
+        
+        .track-card.error-card {
+            border-left: 3px solid #dc2626;
+            background: #fff9f9;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div style="margin-bottom: 0.5rem;">
+        <h1>🎵 NSP коллекция</h1>
+        <div class="subhead">Полный список треков · встроенные аудиоплееры · светлая тема</div>
+    </div>
+
+    <div class="audio-list" id="trackList">
+        <!-- список будет динамически сгенерирован через JS -->
+    </div>
+    <div class="footer-note">
+        ⚡ Каждый файл представлен отдельным плеером. Поддерживаются все современные браузеры.
+        Убедитесь, что mp3-файлы находятся в той же директории, что и страница.
+    </div>
+</div>
+
+<script>
+    // Список mp3-файлов точно в том порядке, как указано в задании
+    const audioFiles = [
+        "NSP_01.mp3",
+        "NSP_02.mp3",
+        "NSP_03.mp3",
+        "NSP_04_dobro_pozhalivat.mp3",
+        "NSP_05.mp3",
+        "NSP_06.mp3",
+        "NSP_07.mp3",
+        "NSP_08.mp3",
+        "NSP_09_interrupted.mp3",
+        "NSP_11_satana_ya.mp3",
+        "NSP_12.mp3",
+        "NSP_13.mp3",
+        "NSP_14.mp3",
+        "NSP_15_snova_ya_povstrechal_tebya.mp3"
+    ];
+
+    // Функция для преобразования имени файла в "человекочитаемый" заголовок трека
+    function formatTrackName(filename) {
+        let name = filename.replace(/\.mp3$/i, '');
+        let readable = name.replace(/_/g, ' ');
+        readable = readable.charAt(0).toUpperCase() + readable.slice(1).toLowerCase();
+        
+        // Улучшаем отображение специальных названий
+        if (readable.includes('Dobro pozhalivat')) {
+            readable = readable.replace('Dobro pozhalivat', 'Добро пожаловать');
+        }
+        if (readable.includes('Interrupted')) {
+            readable = readable.replace('Interrupted', 'Interrupted');
+        }
+        if (readable.includes('Satana ya')) {
+            readable = readable.replace('Satana ya', 'Сатана, я...');
+        }
+        if (readable.includes('Snova ya povstrechal tebya')) {
+            readable = readable.replace('Snova ya povstrechal tebya', 'Снова я повстречал тебя');
+        }
+        readable = readable.replace(/^Nsp /i, 'NSP ');
+        
+        return readable;
+    }
+
+    // Функция для получения номера трека
+    function getTrackNumber(index) {
+        const originalNumbers = [
+            "01", "02", "03", "04", "05", "06", "07", "08", "09", "11", "12", "13", "14", "15"
+        ];
+        return originalNumbers[index] || String(index + 1).padStart(2, '0');
+    }
+
+    // Получаем контейнер
+    const trackListContainer = document.getElementById('trackList');
+
+    // Построение списка
+    function buildPlaylist() {
+        if (!trackListContainer) return;
+
+        trackListContainer.innerHTML = '';
+
+        audioFiles.forEach((file, idx) => {
+            // Создаем карточку трека
+            const trackCard = document.createElement('div');
+            trackCard.className = 'track-card';
+
+            // Блок с информацией о треке
+            const trackInfo = document.createElement('div');
+            trackInfo.className = 'track-info';
+
+            // Номер трека
+            const trackNumberSpan = document.createElement('span');
+            trackNumberSpan.className = 'track-number';
+            trackNumberSpan.textContent = getTrackNumber(idx);
+
+            // Имя трека (форматированное)
+            const trackNameSpan = document.createElement('span');
+            trackNameSpan.className = 'track-name';
+            const formattedName = formatTrackName(file);
+            trackNameSpan.textContent = formattedName;
+
+            // Бейдж с именем исходного файла
+            const fileBadge = document.createElement('span');
+            fileBadge.className = 'file-badge';
+            fileBadge.textContent = file;
+
+            trackInfo.appendChild(trackNumberSpan);
+            trackInfo.appendChild(trackNameSpan);
+            trackInfo.appendChild(fileBadge);
+
+            // Блок аудиоплеера
+            const playerBlock = document.createElement('div');
+            playerBlock.className = 'audio-player';
+
+            // Создаем элемент <audio>
+            const audioEl = document.createElement('audio');
+            audioEl.controls = true;
+            audioEl.preload = 'metadata';
+
+            // Источник mp3
+            const source = document.createElement('source');
+            source.src = file;
+            source.type = 'audio/mpeg';
+
+            const fallbackText = document.createTextNode('Ваш браузер не поддерживает тег audio.');
+            
+            audioEl.appendChild(source);
+            audioEl.appendChild(fallbackText);
+
+            // Обработка ошибок загрузки
+            let errorShown = false;
+            audioEl.onerror = function() {
+                if (!errorShown) {
+                    errorShown = true;
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'error-message';
+                    errorMsg.textContent = `⚠️ Файл "${file}" не найден. Проверьте путь к файлу.`;
+                    playerBlock.appendChild(errorMsg);
+                    trackCard.classList.add('error-card');
+                }
+            };
+
+            playerBlock.appendChild(audioEl);
+            trackCard.appendChild(trackInfo);
+            trackCard.appendChild(playerBlock);
+            trackListContainer.appendChild(trackCard);
+        });
+    }
+    
+    // Запускаем построение списка
+    buildPlaylist();
+
+    console.log('🎵 Аудиоплеер (светлая тема) готов. Файлы:', audioFiles);
+</script>
+</body>
+</html>
