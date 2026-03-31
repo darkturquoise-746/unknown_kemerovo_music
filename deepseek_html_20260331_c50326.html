@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>NSP Плейлист — Автоматическое воспроизведение подряд</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            font-family: system-ui, 'Segoe UI', 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 2rem 1.5rem;
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            padding: 2rem 1.8rem;
+            box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #2d3e6e, #1f2a44);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.3rem;
+            display: inline-block;
+        }
+
+        .subhead {
+            color: #5a6c8a;
+            margin-bottom: 1.8rem;
+            border-left: 3px solid #7c8db0;
+            padding-left: 1rem;
+            font-size: 0.9rem;
+            font-weight: 450;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .playback-controls {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+            background: #f1f5f9;
+            padding: 0.4rem 1rem;
+            border-radius: 60px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .ctrl-btn {
+            background: white;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 0.3rem 0.7rem;
+            border-radius: 40px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            color: #2c3e66;
+            border: 1px solid #cbd5e1;
+        }
+
+        .ctrl-btn:hover {
+            background: #e6edf4;
+            transform: scale(0.96);
+        }
+
+        .status-badge {
+            background: #e2e8f0;
+            padding: 0.3rem 0.9rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #1e293b;
+        }
+
+        /* аудио список */
+        .audio-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        /* карточка трека */
+        .track-card {
+            background: #ffffff;
+            border-radius: 1.25rem;
+            transition: all 0.2s ease;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        }
+
+        .track-card.playing {
+            background: #fefce8;
+            border-left: 4px solid #eab308;
+            border-left-width: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .track-card.played {
+            opacity: 0.85;
+            background: #f9fafb;
+        }
+
+        .track-info {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.9rem 1.2rem;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .track-number {
+            font-weight: 700;
+            font-size: 1rem;
+            background: #f1f5f9;
+            width: 2.6rem;
+            height: 2.6rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 60px;
+            color: #2c3e66;
+            font-family: monospace;
+            border: 1px solid #e2e8f0;
+        }
+
+        .track-name {
+            font-weight: 600;
+            font-size: 1rem;
+            word-break: break-word;
+            flex: 2;
+            letter-spacing: -0.2px;
+            color: #1e2a3a;
+        }
+
+        .file-badge {
+            font-size: 0.7rem;
+            background: #f8fafc;
+            padding: 0.25rem 0.7rem;
+            border-radius: 30px;
+            color: #4a5b7a;
+            font-family: monospace;
+            border: 1px solid #e2e8f0;
+        }
+
+        .play-status-icon {
+            font-size: 0.85rem;
+            background: #f1f5f9;
+            padding: 0.2rem 0.6rem;
+            border-radius: 50px;
+            color: #4b5563;
+        }
+
+        /* плеер */
+        .audio-player {
+            padding: 0.9rem 1.2rem 1rem 1.2rem;
+        }
+
+        audio {
+            width: 100%;
+            height: 44px;
+            border-radius: 40px;
+            outline: none;
+        }
+
+        audio::-webkit-media-controls-panel {
+            background-color: #f8fafc;
+            border-radius: 40px;
+        }
+        audio::-webkit-media-controls-current-time-display,
+        audio::-webkit-media-controls-time-remaining-display {
+            color: #1e293b;
+        }
+        audio::-webkit-media-controls-play-button {
+            background-color: #e2e8f0;
+            border-radius: 50%;
+        }
+
+        .footer-note {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #6c7a91;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1.2rem;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+            .container {
+                padding: 1.2rem;
+            }
+            .track-info {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .track-number {
+                width: auto;
+                padding: 0.2rem 1rem;
+            }
+            .subhead {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div style="margin-bottom: 0.2rem;">
+        <h1>🎵 NSP Плейлист</h1>
+        <div class="subhead">
+            <span>⭐ Автоматическое воспроизведение треков друг за другом</span>
+            <div class="playback-controls">
+                <button class="ctrl-btn" id="playAllBtn">▶ Старт</button>
+                <button class="ctrl-btn" id="pauseAllBtn">⏸ Пауза</button>
+                <button class="ctrl-btn" id="stopAllBtn">⏹ Стоп</button>
+                <!--<span class="status-badge" id="globalStatus">⏸ Остановлен</span>-->
+            </div>
+        </div>
+    </div>
+
+    <div class="audio-list" id="trackList">
+        <!-- динамическое заполнение -->
+    </div>
+</div>
+
+<script>
+    // Список mp3-файлов в точном порядке
+    const audioFiles = [
+        "NSP_01.mp3",
+        "NSP_02.mp3",
+        "NSP_03.mp3",
+        "NSP_04_dobro_pozhalivat.mp3",
+        "NSP_05.mp3",
+        "NSP_06.mp3",
+        "NSP_07.mp3",
+        "NSP_08.mp3",
+        "NSP_09_interrupted.mp3",
+        "NSP_11_satana_ya.mp3",
+        "NSP_12.mp3",
+        "NSP_13.mp3",
+        "NSP_14.mp3",
+        "NSP_15_snova_ya_povstrechal_tebya.mp3"
+    ];
+
+    // Хранилище элементов audio и их карточек
+    let audioElements = [];
+    let trackCards = [];
+    let currentTrackIndex = 0;
+    let isAutoPlayEnabled = true;      // флаг автоматического переключения
+    let autoPlayTimeout = null;
+    let userPaused = false;             // ручная пауза глобальная
+
+    // Функция для форматирования имени трека
+    function formatTrackName(filename) {
+        let name = filename.replace(/\.mp3$/i, '');
+        let readable = name.replace(/_/g, ' ');
+        readable = readable.charAt(0).toUpperCase() + readable.slice(1).toLowerCase();
+        if (readable.includes('Dobro pozhalivat')) {
+            readable = readable.replace('Dobro pozhalivat', 'Добро пожаловать');
+        }
+        if (readable.includes('Interrupted')) {
+            readable = readable.replace('Interrupted', 'Interrupted');
+        }
+        if (readable.includes('Satana ya')) {
+            readable = readable.replace('Satana ya', 'Сатана, я...');
+        }
+        if (readable.includes('Snova ya povstrechal tebya')) {
+            readable = readable.replace('Snova ya povstrechal tebya', 'Снова я повстречал тебя');
+        }
+        readable = readable.replace(/^Nsp /i, 'NSP ');
+        return readable;
+    }
+
+    // Получение номера трека по индексу
+    function getTrackNumber(index) {
+        const originalNumbers = [
+            "01", "02", "03", "04", "05", "06", "07", "08", "09", "11", "12", "13", "14", "15"
+        ];
+        return originalNumbers[index] || String(index + 1).padStart(2, '0');
+    }
+
+    // Обновление визуального состояния (подсветка играющего трека)
+    function updatePlayingHighlight() {
+        trackCards.forEach((card, idx) => {
+            card.classList.remove('playing');
+            if (idx === currentTrackIndex && !userPaused && isAutoPlayEnabled && audioElements[currentTrackIndex] && !audioElements[currentTrackIndex].paused) {
+                card.classList.add('playing');
+            } else if (idx === currentTrackIndex && audioElements[currentTrackIndex] && !audioElements[currentTrackIndex].paused) {
+                card.classList.add('playing');
+            }
+        });
+        // Также обновим глобальный статус
+        const globalStatusSpan = document.getElementById('globalStatus');
+        if (userPaused) {
+            // globalStatusSpan.textContent = '⏸ Пауза';
+            globalStatusSpan.style.background = '#f1f5f9';
+        } else if (audioElements[currentTrackIndex] && !audioElements[currentTrackIndex].paused && !userPaused) {
+            // globalStatusSpan.textContent = `▶ Играет трек ${getTrackNumber(currentTrackIndex)}`;
+            globalStatusSpan.style.background = '#e0f2fe';
+        } else if (isAutoPlayEnabled && !userPaused && currentTrackIndex < audioElements.length) {
+            // globalStatusSpan.textContent = `⏸ Ожидание / готов`;
+            globalStatusSpan.style.background = '#e2e8f0';
+        } else {
+            // globalStatusSpan.textContent = `⏸ Остановлен`;
+            globalStatusSpan.style.background = '#e2e8f0';
+        }
+    }
+
+    // Остановка всех аудио, сброс таймера
+    function stopAllTracks(resetIndex = true) {
+        if (autoPlayTimeout) {
+            clearTimeout(autoPlayTimeout);
+            autoPlayTimeout = null;
+        }
+        for (let i = 0; i < audioElements.length; i++) {
+            if (audioElements[i]) {
+                audioElements[i].pause();
+                audioElements[i].currentTime = 0;
+            }
+        }
+        if (resetIndex) {
+            currentTrackIndex = 0;
+        }
+        userPaused = false;
+        isAutoPlayEnabled = true;
+        updatePlayingHighlight();
+        const statusSpan = document.getElementById('globalStatus');
+        statusSpan.textContent = '⏹ Сброшено';
+        setTimeout(() => {
+            if (!userPaused && !(audioElements[currentTrackIndex] && !audioElements[currentTrackIndex].paused))
+                statusSpan.textContent = '⏸ Остановлен';
+        }, 1000);
+    }
+
+    // Функция для запуска воспроизведения конкретного трека (индекс)
+    function playTrack(index) {
+        if (index >= audioElements.length) {
+            // окончание плейлиста
+            if (autoPlayTimeout) clearTimeout(autoPlayTimeout);
+            const globalSpan = document.getElementById('globalStatus');
+            globalSpan.textContent = '✅ Плейлист завершён';
+            isAutoPlayEnabled = true;
+            userPaused = false;
+            updatePlayingHighlight();
+            return;
+        }
+        if (index < 0) return;
+
+        // Остановить все треки кроме текущего
+        for (let i = 0; i < audioElements.length; i++) {
+            if (i !== index && audioElements[i]) {
+                audioElements[i].pause();
+                audioElements[i].currentTime = 0;
+            }
+        }
+        
+        const targetAudio = audioElements[index];
+        if (!targetAudio) return;
+        
+        // снимаем флаг паузы, если воспроизводим новый трек
+        userPaused = false;
+        isAutoPlayEnabled = true;
+        currentTrackIndex = index;
+        
+        targetAudio.currentTime = 0;
+        const playPromise = targetAudio.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.warn(`Автовоспроизведение заблокировано или ошибка: ${error}`);
+                // Если ошибка автоплея (политика браузера), покажем подсказку
+                const globalSpan = document.getElementById('globalStatus');
+                globalSpan.textContent = '⚠️ Нажмите "Старт" для автовоспроизведения';
+                userPaused = true; // не переключаем дальше автоматически
+                updatePlayingHighlight();
+            });
+        }
+        
+        updatePlayingHighlight();
+        
+        // Удаляем предыдущий таймер, если был
+        if (autoPlayTimeout) {
+            clearTimeout(autoPlayTimeout);
+            autoPlayTimeout = null;
+        }
+    }
+
+    // Функция для переключения на следующий трек (вызывается по окончании текущего)
+    function onTrackEnded() {
+        if (!isAutoPlayEnabled || userPaused) {
+            // Если отключено автопереключение или ручная пауза - не идем дальше
+            return;
+        }
+        const nextIndex = currentTrackIndex + 1;
+        if (nextIndex < audioElements.length) {
+            playTrack(nextIndex);
+        } else {
+            // Конец плейлиста
+            if (autoPlayTimeout) clearTimeout(autoPlayTimeout);
+            const globalSpan = document.getElementById('globalStatus');
+            globalSpan.textContent = '🏁 Плейлист окончен';
+            isAutoPlayEnabled = true;
+            userPaused = false;
+            updatePlayingHighlight();
+        }
+    }
+
+    // Пауза глобальная (ставим на паузу текущий трек)
+    function pauseGlobal() {
+        if (autoPlayTimeout) clearTimeout(autoPlayTimeout);
+        if (audioElements[currentTrackIndex]) {
+            audioElements[currentTrackIndex].pause();
+        }
+        userPaused = true;
+        updatePlayingHighlight();
+    }
+
+    // Возобновление с текущего трека
+    function resumeGlobal() {
+        if (currentTrackIndex >= audioElements.length) {
+            // если плейлист закончен, можно начать сначала
+            if (currentTrackIndex >= audioElements.length) {
+                stopAllTracks(true);
+                playTrack(0);
+            }
+            return;
+        }
+        userPaused = false;
+        isAutoPlayEnabled = true;
+        const currAudio = audioElements[currentTrackIndex];
+        if (currAudio) {
+            currAudio.play().catch(e => {
+                console.warn("Возобновление заблокировано: ", e);
+                userPaused = true;
+            });
+        }
+        updatePlayingHighlight();
+    }
+
+    // Сброс и начало сначала
+    function restartPlaylist() {
+        stopAllTracks(true);
+        playTrack(0);
+    }
+
+    // Построение списка, привязка обработчиков
+    function buildPlaylist() {
+        const container = document.getElementById('trackList');
+        if (!container) return;
+        container.innerHTML = '';
+        audioElements = [];
+        trackCards = [];
+
+        audioFiles.forEach((file, idx) => {
+            const trackCard = document.createElement('div');
+            trackCard.className = 'track-card';
+            
+            // информационная зона
+            const trackInfo = document.createElement('div');
+            trackInfo.className = 'track-info';
+            
+            const trackNumberSpan = document.createElement('span');
+            trackNumberSpan.className = 'track-number';
+            trackNumberSpan.textContent = getTrackNumber(idx);
+            
+            const trackNameSpan = document.createElement('span');
+            trackNameSpan.className = 'track-name';
+            trackNameSpan.textContent = formatTrackName(file);
+            
+            const fileBadge = document.createElement('span');
+            fileBadge.className = 'file-badge';
+            fileBadge.textContent = file;
+            
+            trackInfo.appendChild(trackNumberSpan);
+            trackInfo.appendChild(trackNameSpan);
+            trackInfo.appendChild(fileBadge);
+            
+            // плеер
+            const playerBlock = document.createElement('div');
+            playerBlock.className = 'audio-player';
+            const audioEl = document.createElement('audio');
+            audioEl.controls = true;
+            audioEl.preload = 'metadata';
+            const source = document.createElement('source');
+            source.src = file;
+            source.type = 'audio/mpeg';
+            audioEl.appendChild(source);
+            audioEl.appendChild(document.createTextNode('Ваш браузер не поддерживает audio'));
+            
+            // Обработка ошибок загрузки файла (если нет файла - но не ломаем логику)
+            audioEl.onerror = () => {
+                if (!audioEl.hasAttribute('data-error-shown')) {
+                    audioEl.setAttribute('data-error-shown', 'true');
+                    const errSpan = document.createElement('div');
+                    errSpan.style.fontSize = '0.7rem';
+                    errSpan.style.color = '#b91c1c';
+                    errSpan.style.marginTop = '0.3rem';
+                    errSpan.textContent = `⚠️ Файл "${file}" не найден. Пропуск в авторежиме.`;
+                    playerBlock.appendChild(errSpan);
+                    // Добавим, чтобы при окончании этого трека переключиться дальше
+                    audioEl.addEventListener('ended', () => {
+                        if (isAutoPlayEnabled && !userPaused && currentTrackIndex === idx) {
+                            onTrackEnded();
+                        }
+                    });
+                }
+            };
+            
+            playerBlock.appendChild(audioEl);
+            trackCard.appendChild(trackInfo);
+            trackCard.appendChild(playerBlock);
+            container.appendChild(trackCard);
+            
+            // сохраняем ссылки
+            audioElements.push(audioEl);
+            trackCards.push(trackCard);
+            
+            // Добавляем слушатель окончания трека для автоматического переключения
+            audioEl.addEventListener('ended', () => {
+                if (isAutoPlayEnabled && !userPaused && currentTrackIndex === idx) {
+                    onTrackEnded();
+                }
+            });
+            
+            // Если пользователь вручную нажимает play на любом плеере — синхронизируем глобальный индекс и останавливаем остальные
+            audioEl.addEventListener('play', () => {
+                // При ручном запуске любого плеера — переключаем глобальный контекст на этот трек, ставим остальные на паузу
+                if (currentTrackIndex !== idx) {
+                    // останавливаем остальные треки
+                    for (let i = 0; i < audioElements.length; i++) {
+                        if (i !== idx && audioElements[i]) {
+                            audioElements[i].pause();
+                            audioElements[i].currentTime = 0;
+                        }
+                    }
+                    currentTrackIndex = idx;
+                    userPaused = false;
+                    isAutoPlayEnabled = true;
+                    if (autoPlayTimeout) clearTimeout(autoPlayTimeout);
+                    updatePlayingHighlight();
+                } else {
+                    userPaused = false;
+                    isAutoPlayEnabled = true;
+                    updatePlayingHighlight();
+                }
+            });
+            
+            // Если поставили на паузу вручную — глобально запоминаем, но не сбиваем авто-режим полностью
+            audioEl.addEventListener('pause', () => {
+                if (currentTrackIndex === idx && !audioEl.ended) {
+                    userPaused = true;
+                    updatePlayingHighlight();
+                }
+            });
+        });
+        
+        // После построения можно запустить первый трек автоматически? Нет, по требованию "Все файлы должны воспроизводиться автоматически друг за другом"
+        // Однако браузеры блокируют autoplay без жеста пользователя. Поэтому при загрузке страницы пока не стартуем, но даем кнопку Старт.
+        // Но также можно попробовать запустить после любого взаимодействия. Сделаем, чтобы при нажатии "Старт" запускалось.
+        // При этом установим обработчик кнопок.
+        const playAllBtn = document.getElementById('playAllBtn');
+        const pauseAllBtn = document.getElementById('pauseAllBtn');
+        const stopAllBtn = document.getElementById('stopAllBtn');
+        
+        if (playAllBtn) {
+            playAllBtn.addEventListener('click', () => {
+                // Если плейлист уже играет и не на паузе, то не перезапускаем с начала, а просто снимаем паузу
+                if (userPaused && audioElements[currentTrackIndex] && !audioElements[currentTrackIndex].paused === false) {
+                    resumeGlobal();
+                } 
+                else if (currentTrackIndex >= audioElements.length - 1 && (audioElements[currentTrackIndex] && audioElements[currentTrackIndex].ended)) {
+                    restartPlaylist();
+                }
+                else if (!userPaused && audioElements[currentTrackIndex] && !audioElements[currentTrackIndex].paused) {
+                    // уже играет - ничего не делаем
+                }
+                else {
+                    // Если не играет и не на паузе (стоп или конец)
+                    if (currentTrackIndex >= audioElements.length || (audioElements[currentTrackIndex] && audioElements[currentTrackIndex].ended && currentTrackIndex === audioElements.length-1)) {
+                        stopAllTracks(true);
+                        playTrack(0);
+                    } else {
+                        resumeGlobal();
+                    }
+                }
+            });
+        }
+        if (pauseAllBtn) {
+            pauseAllBtn.addEventListener('click', () => {
+                pauseGlobal();
+            });
+        }
+        if (stopAllBtn) {
+            stopAllBtn.addEventListener('click', () => {
+                stopAllTracks(true);
+            });
+        }
+        
+        // Инициализация: ничто не играет, но устанавливаем индекс 0
+        currentTrackIndex = 0;
+        userPaused = false;
+        isAutoPlayEnabled = true;
+        updatePlayingHighlight();
+        
+        // Дополнительно: если пользователь запустит первый трек вручную, все равно будет авто-следование
+        // Также обеспечим, что при клике на "Старт" без дополнительных жестов, пытаемся воспроизвести (но браузер может блокировать)
+        // Чтобы соблюсти требование "все файлы должны воспроизводиться автоматически друг за другом", пользователь должен кликнуть старт или разрешить автоплей.
+        // Сделаем подсказку при загрузке.
+        const globalSpan = document.getElementById('globalStatus');
+        // globalSpan.textContent = '🔊 Нажмите "Старт" для автоматического воспроизведения подряд';
+    }
+    
+    // Запускаем построение после загрузки DOM
+    document.addEventListener('DOMContentLoaded', buildPlaylist);
+</script>
+</body>
+</html>
